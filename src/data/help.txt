@@ -1,0 +1,11 @@
+Welcome to caleb's facial recognition blockchain system.
+
+How to use:
+- The console displays feedback form the program
+- The program tries to connect to the rest of the network automaticlly
+- To create an "identity", simply click "create new identity" on the
+main menu and follow the procedure by taking a picture of your face 
+while the camera feedback shows a box around your face, this means 
+the program detects your face
+- To view what identitys are on the ledger, simply click "open ledger" on 
+the main menu
