@@ -1,0 +1,23 @@
+Date		time in - time out	total hours	
+2021-02-28	12:00am - 11:00pm	11hours	
+2021-03-01	10:50am - 2pm		3hours
+2021-03-01	6pm - 10pm		4hours
+2021-03-05	5pm - 10pm		5hours
+2021-03-06	12:30am - 3pm		2.5hours
+2021-03-06	7:30pm - 11:30pm	4hours
+2021-03-07	12:00pm - 1pm		1hour
+2021-03-08	6:00pm - 10pm		4hours
+2021-03-09	11:30pm - 1pm		1.5hours
+2021-03-09	5pm - 7pm		2hours
+2021-03-18	5pm - 12pm		7hours	
+2021-03-19	10am - 8pm		10hours
+2021-03-20  8pm - 1am      5hours
+2021-03-21  12pm - 3pm      3hours
+2021-03-21  4pm - 7pm       3hours
+2021-03-24  12pm - 6pm      6hours
+2021-03-25  3pm - 11pm      8hours
+2021-04-01	6:00pm - 10pm		4hours
+2021-04-07	6:00pm - 10pm		4hours
+2021-04-08	5:00pm - 10pm		5hours
+2021-04-09	4:00pm - 10pm		6hours
+TOTAL:
