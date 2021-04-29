@@ -22,4 +22,5 @@ Date		time in - time out	total hours
 2021-04-09	4:00pm - 10pm     6hours
 2021-04-13      4:00pm - 10pm     6hours
 2021-04-15      5:00pm - 10pm     5hours 
+2021-04-28      4:00pm - 11pm     7hours 
 TOTAL:
