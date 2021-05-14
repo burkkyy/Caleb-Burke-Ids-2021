@@ -1,4 +1,4 @@
-# this is the file that handles the eliptic curve cryptography
+# This file handles Eliptic Curve Cryptography
 import random
 import hashlib
 
