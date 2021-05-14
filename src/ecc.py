@@ -1,11 +1,10 @@
-# This file handles Eliptic Curve Cryptography
-import random
-import hashlib
-
 '''
-using ECC signatures because RSA IS SLOW AF
+This file handles Eliptic Curve Cryptography
+Using ECC signatures because RSA IS SLOW AF 
 also ECC is way cooler than RSA
 '''
+import random
+import hashlib
 
 INFINITY_POINT = None
 
