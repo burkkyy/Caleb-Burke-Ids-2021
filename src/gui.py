@@ -1,6 +1,6 @@
 import tkinter as tk  # Part of Python standard library
 import cv2  # pip install opencv-python, face_recognition only compatible with opencv images
-import lib.face_recog as face
+import face_recog as face
 import network
 
 TITLE_FONT = ("TkDefaultFont", 15)

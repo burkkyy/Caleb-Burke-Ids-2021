@@ -3,7 +3,7 @@ import threading, socket, pickle, time  # All part of Python standard libary
 
 socket.setdefaulttimeout(3)  # So socket.listen and socket.recv only run for 3 seconds to prevent program hanging
 
-with open("data/networkIps.txt", "r") as r:
+with open("data/network_Ips.txt", "r") as r:
     NETWORK_IPS = r.readlines()
 print(f"NETWORK IPS KNOWN: {NETWORK_IPS}")
 
