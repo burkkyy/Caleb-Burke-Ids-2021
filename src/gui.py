@@ -1,7 +1,7 @@
 import tkinter as tk  # Part of Python standard library
 import cv2  # pip install opencv-python, face_recognition only compatible with opencv images
 import face_recog as face
-import network
+import network 
 
 TITLE_FONT = ("TkDefaultFont", 15)
 LARGE_FONT = ("TkDefaultFont", 12)
@@ -149,7 +149,7 @@ class ShowActiveConnsScreen(tk.Frame):
 
         conns = self.controller.getConns()
         for i, conn in enumerate(conns):
-            tempLabel = tk.Label(self, text=conn)
+            tempLabel = tk.Label(self, text=f"{i}: {conn}")
             tempLabel.pack(padx=0, pady=0)
 
         goBackButton = tk.Button(self, text="Go Back", command=lambda: self.controller.showFrame(MainScreen))
