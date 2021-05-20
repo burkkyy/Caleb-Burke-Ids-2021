@@ -49,7 +49,7 @@ class BlockchainNetwork:
         dump = pickle.dumps((protocol, obj))
         conn.sendall(dump)
 
-    def sendToAll(self, obj, protocol="!"):
+    def sendToAll(self, obj=None, protocol="!"):
         """
         obj: the object we wish to send
         protocol: the 'send type', ex !NEWBLOCK
