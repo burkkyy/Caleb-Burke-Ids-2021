@@ -9,7 +9,7 @@ SMALL_FONT = ("TkDefaultFont", 10)
 
 
 class Base(tk.Tk):
-    def __init__(self, net, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
         tk.Tk.iconbitmap(self, default="myIcon.ico")
         tk.Tk.wm_title(self, "Caleb's Blockchain Network Client")
@@ -34,19 +34,22 @@ class Base(tk.Tk):
 
         self.showFrame(MainScreen)
 
+        self.net = network.BlockchainNetwork()
+        self.net.start()
+
     def showFrame(self, cont):
         frame = self.frames[cont]
         frame.update()
         frame.tkraise()
 
     def getConns(self):
-        return ["a", "b", "c"]
+        return self.net.get_conns()
 
     def getLedgerIntegrity(self):
         return True
 
     def getImageFromFile(self):
-        filepath = filedialog.askopenfilename(
+        filepath = tk.filedialog.askopenfilename(
             initialdir="/",
             title="Select an Image",
             filetypes=(
@@ -55,6 +58,10 @@ class Base(tk.Tk):
             )
         )
         return filepath
+
+    def quit(self):
+        self.destroy()
+        self.net.close()
 
 class MainScreen(tk.Frame):
     def __init__(self, parent, controller):
@@ -68,7 +75,7 @@ class MainScreen(tk.Frame):
         scanImageButton = tk.Button(self, text="Scan image for Identities", command=lambda: controller.showFrame(ScanImageScreen))
         showActiveConnsButton = tk.Button(self, text="Show active connections", command=lambda: controller.showFrame(ShowActiveConnsScreen))
         helpButton = tk.Button(self, text="Help", command=lambda: controller.showFrame(HelpScreen))
-        quitButton = tk.Button(self, text="Quit", command=controller.destroy)
+        quitButton = tk.Button(self, text="Quit", command=controller.quit)
 
         # Add them onto the screen using .grid()
         titleLabel.grid(row=0, column=0, sticky="N")
@@ -114,11 +121,12 @@ class CreateIdentityScreen(tk.Frame):
         tk.Frame.__init__(self, parent)
         title = tk.Label(self, text="Create New Identity")
         title.pack(pady=10, padx=10)
+        self.current = 10
         goBackButton = tk.Button(self, text="Go Back", command=lambda: controller.showFrame(MainScreen))
         goBackButton.pack()
 
     def update(self):
-        pass
+        print(self.current)
 
 class ScanImageScreen(tk.Frame):
     def __init__(self, parent, controller):
@@ -148,10 +156,14 @@ class ShowActiveConnsScreen(tk.Frame):
         title.pack(padx=0, pady=0)
 
         conns = self.controller.getConns()
-        for i, conn in enumerate(conns):
-            tempLabel = tk.Label(self, text=f"{i}: {conn}")
+        if conns:
+            for i, conn in enumerate(conns):
+                tempLabel = tk.Label(self, text=f"{i}: {conn}")
+                tempLabel.pack(padx=0, pady=0)
+        else:
+            tempLabel = tk.Label(self, text="no connections")
             tempLabel.pack(padx=0, pady=0)
-
+        
         goBackButton = tk.Button(self, text="Go Back", command=lambda: self.controller.showFrame(MainScreen))
         goBackButton.pack(padx=0, pady=0)
 
@@ -167,5 +179,5 @@ class HelpScreen(tk.Frame):
         pass
 
 if __name__ == '__main__':
-    g = Base(None)
+    g = Base()
     g.mainloop()
