@@ -104,6 +104,7 @@ class Blockchain:
         block.mine(self.difficulty)
         self.chain.append(block)
         self.pending_identities = []
+        return block
 
     def create_identity(self, name, face_encoding):
         qk, pk = P224.create_keys()
@@ -132,6 +133,10 @@ class Blockchain:
             return False
         if not block.has_valid_identities():
             return False
+        for identity in block.identities:
+            for i, iden in enumerate(self.pending_identities):
+                if identity.hash == iden.hash:
+                    self.pending_identities.pop(i)
         self.chain.append(block)
         return True
 

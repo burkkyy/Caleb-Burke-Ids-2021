@@ -33,20 +33,9 @@ class BlockchainNetwork:
         # Blockchain Stuff
         self.ledger = blockchain.Blockchain()
         self.ledger.printChainInfo()
+
         '''
-        For one client the code below works, but to handle multiple clients
-        we only connect to a node when we need to and disconnect right after
-        '''
-        # self.ADDR_CLIENT = ("10.0.0.113", self.PORT)
-        # self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self.client.connect(self.ADDR_CLIENT)
-        # self.servers = []
-        '''
-        In order to create a twoway connection between two (or more) nodes
-        each node will host a server on port 5050 on their respetive ip.
-        Then if one node needs to send or receive info it would 
-        connect to each node as a client  
-        
+        Socket receive / send structure:
         SENDING STRUCTURE: (ip, protocol, payload)
         RECEIVING STRUCTURE: (ip, protocol, payload) 
         '''
@@ -60,20 +49,7 @@ class BlockchainNetwork:
         dump = pickle.dumps((protocol, obj))
         conn.sendall(dump)
 
-    def sendToIp(self, ip, obj=None, protocol="!"):
-        """
-        ip: The ip we wish to send to
-        obj: Object we wish to send
-        protocol: The 'send type', ex !NEWBLOCK
-        """
-        for client in self.clients:
-            if ip == client[1][0]:
-                print(client)
-                dump = pickle.dumps((protocol, obj))
-                client[0].sendall(dump)
-                break
-
-    def sendToAll(self, obj=None, protocol="!"):
+    def sendToAll(self, obj, protocol="!"):
         """
         obj: the object we wish to send
         protocol: the 'send type', ex !NEWBLOCK
@@ -82,8 +58,9 @@ class BlockchainNetwork:
         for client in self.clients:
             client[0].sendall(dump)
 
-    def sendToAllNetwork(self):
-        pass
+    def sendToAllNetwork(self, obj, protocol="!"):
+        for ip in NETWORK_IPS:
+            self.connect(ip, protocol, obj)
 
     def handleReceive(self, message, conn):
         # THIS CODE IS EXTREMLY INSECURE BUT I AM NOT FOCUSING ON THIS PART OF THE PROJECT
@@ -101,7 +78,7 @@ class BlockchainNetwork:
         elif message[0] == RECEIVE_CHAIN_MESSAGE:
             print(f"[NETWORK] received vaild protocol: {message[0]}")
             b = message[1]
-            if type(b) != blockchain.Blockchain and b.check_integrity:
+            if type(b) == blockchain.Blockchain and b.check_integrity:
                 self.ledger = b
         elif message[0] == NEW_IDENTITY_MESSAGE:
             print(f"[NETWORK] received vaild protocol: {message[0]}")
@@ -172,12 +149,13 @@ class BlockchainNetwork:
 
     def createIdentity(self, name, face_encoding):
         iden, qk, pk = self.ledger.create_identity(name, face_encoding)
-        self.sendToAll(iden, NEW_IDENTITY_MESSAGE)
+        self.sendToAllNetwork(iden, NEW_IDENTITY_MESSAGE)
         with open("data/keys.txt", "a+") as r:
             r.write("\n" + qk + pk)
 
     def mineBlock(self):
-        pass
+        block = self.ledger.mine_block()
+        self.sendToAllNetwork(block, NEW_BLOCK_MESSAGE)
 
     def get_conns(self):
         return self.clients
@@ -190,13 +168,7 @@ class BlockchainNetwork:
         thread = threading.Thread(target=self.listen)
         thread.start()
 
-        ''' For a console exit
-        while not input(">>> ") in ("q", "quit"):
-            pass
-        self.closeAll()
-        '''
-
     def close(self):
-        self.sendToAll(protocol=DISCONNECT_MESSAGE)
+        self.sendToAll(protocol=DISCONNECT_MESSAGE)  # Not sendToAllNetwork because we only need to disconnect from current conns
         self.run = False
         self.ledger.save()
