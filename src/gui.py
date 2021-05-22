@@ -1,9 +1,8 @@
+from tkinter import simpledialog, messagebox
 import network, threading, time, cv2
 from PIL import Image, ImageTk
 import face_recog as face
-import tkinter as tk  # Part of Python standard library
-from tkinter import simpledialog
-from tkinter import messagebox
+import tkinter as tk  
 
 TITLE_FONT = ("TkDefaultFont", 15)
 LARGE_FONT = ("TkDefaultFont", 12)
