@@ -1,8 +1,8 @@
-from tkinter import simpledialog, messagebox
+from tkinter import font, simpledialog, messagebox, filedialog
 import network, threading, time, cv2
 from PIL import Image, ImageTk
 import face_recog as face
-import tkinter as tk  
+import tkinter as tk
 
 TITLE_FONT = ("TkDefaultFont", 15)
 LARGE_FONT = ("TkDefaultFont", 12)
@@ -28,9 +28,9 @@ class Base(tk.Tk):
             ShowLedgerIntegrityScreen, 
             CreateIdentityScreen, 
             ScanImageScreen, 
-            ShowActiveConnsScreen, 
-            HelpScreen,
+            ShowActiveConnsScreen,
             WebcamScreen,
+            IdentityFromImageScreen
             ):
             frame = f(container, self)
             self.frames[f] = frame
@@ -48,8 +48,7 @@ class Base(tk.Tk):
 
     def changeWindowSize(self, width, height):
         # width x height + x + y
-        tk.Tk.geometry(self, f"{width}x{height}+300+300")
-        pass
+        tk.Tk.geometry(self, f"{width}x{height}")
 
     def getConns(self):
         return self.net.get_conns()
@@ -58,7 +57,7 @@ class Base(tk.Tk):
         return True
 
     def getImageFromFile(self):
-        filepath = tk.filedialog.askopenfilename(
+        filepath = filedialog.askopenfilename(
             initialdir="/",
             title="Select an Image",
             filetypes=(
@@ -87,13 +86,13 @@ class MainScreen(tk.Frame):
             slave.destroy()
         
         # Initialize the screen buttons and labels
-        titleLabel = tk.Label(self, text="Start Page", font=TITLE_FONT)
+        titleLabel = tk.Label(self, text="Start Page", font=TITLE_FONT, padx=5, pady=5)
         openLedgerButton = tk.Button(self, text="Open Ledger", command=lambda: self.controller.showFrame(OpenLedgerScreen))
         checkLedgerIntegrityButton = tk.Button(self, text="Check Integrity of Ledger", command=lambda: self.controller.showFrame(ShowLedgerIntegrityScreen))
         createIdentityButton = tk.Button(self, text="Create New Identity", command=lambda: self.controller.showFrame(CreateIdentityScreen))
         scanImageButton = tk.Button(self, text="Scan image for Identities", command=lambda: self.controller.showFrame(ScanImageScreen))
         showActiveConnsButton = tk.Button(self, text="Show active connections", command=lambda: self.controller.showFrame(ShowActiveConnsScreen))
-        helpButton = tk.Button(self, text="Help", command=self.helpBox)  # lambda: self.controller.showFrame(HelpScreen))
+        helpButton = tk.Button(self, text="Help", command=self.helpBox)
         quitButton = tk.Button(self, text="Quit", command=self.controller.quit)
 
         # Add them onto the screen using .grid()
@@ -173,7 +172,7 @@ class CreateIdentityScreen(tk.Frame):
         CreateFromWebcam = tk.Button(self, text="Create Identity from Webcam", command=lambda: self.controller.showFrame(WebcamScreen))
         CreateFromWebcam.grid(column=0, row=1, pady=0, padx=0)
 
-        CreateFromImage = tk.Button(self, text="Create Identity from Image", command=lambda: self.controller.showFrame(MainScreen))
+        CreateFromImage = tk.Button(self, text="Create Identity from Image", command=lambda: self.controller.showFrame(IdentityFromImageScreen))
         CreateFromImage.grid(column=0, row=2, pady=0, padx=0)
 
         goBackButton = tk.Button(self, text="Go Back", command=lambda: self.controller.showFrame(MainScreen))
@@ -223,24 +222,6 @@ class ShowActiveConnsScreen(tk.Frame):
         
         goBackButton = tk.Button(self, text="Go Back", command=lambda: self.controller.showFrame(MainScreen))
         goBackButton.pack(padx=0, pady=0)
-
-class HelpScreen(tk.Frame):
-    def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent)
-        self.controller = controller
-    
-    def update(self):
-        self.controller.changeWindowSize(400, 300)
-        for slave in self.pack_slaves():
-            slave.destroy()
-        for slave in self.grid_slaves():
-            slave.destroy()
-
-        title = tk.Label(self, text="Help")
-        title.pack(padx=10, pady=10)
-
-        goBackButton = tk.Button(self, text="Go Back", command=lambda: self.controller.showFrame(MainScreen))
-        goBackButton.pack()
 
 class WebcamScreen(tk.Frame):
     def __init__(self, parent, controller):
@@ -327,12 +308,46 @@ class IdentityFromImageScreen(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.controller = controller
 
+    def createIdentityFromImage(self):
+        name = simpledialog.askstring(title="Dialog Box", prompt="Enter name for your Identity below")
+        if name:
+            encoding = face.create_encoding(self.imageCv)
+            qk, pk = self.controller.net.createIdentity(name, encoding)
+            self.close()
+            messagebox.showinfo("Identity Successfully Created", f"Keys:\n\nprivate key: {qk}\n\npublic key: {pk}\n\nKeys can also be viewed in src/data/keys.txt")
+        else:
+            self.create_identity()
+
     def update(self):
-        self.controller.changeWindowSize(400, 300)
+        self.image = self.controller.getImageFromFile()
+        self.imageCv = cv2.imread(self.image)
+        self.image = face.draw_rect_on_people(self.imageCv)
+        self.image = cv2.resize(self.image, (200, 300))
+        self.image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
+        self.image = ImageTk.PhotoImage(image=Image.fromarray(self.image))
+
+        self.controller.changeWindowSize(500, 500)
         for slave in self.pack_slaves():
             slave.destroy()
         for slave in self.grid_slaves():
             slave.destroy()
+
+        title = tk.Label(self, text="Create Identity From Image", font=TITLE_FONT)
+        title.grid(column=0, row=0, padx=5, pady=5)
+
+        confirmBtn = tk.Button(self, text="Create Identity From this Image", command=self.createIdentityFromImage, padx=0, pady=0, anchor='nw')
+        confirmBtn.grid(column=0, row=1, padx=5, pady=5)
+
+        goBackBtn = tk.Button(self, text="Go Back", command=self.close, padx=0, pady=0, anchor='nw')
+        goBackBtn.grid(column=0, row=2, padx=5, pady=5)
+
+        self.canvas = tk.Canvas(self, width=self.image.width(), height=self.image.height())
+        self.canvas.create_image(0, 0, image=self.image, anchor='nw')
+        self.canvas.grid(column=1, row=6, padx=5, pady=5)
+
+    def close(self):
+        self.canvas.destroy()
+        self.controller.showFrame(CreateIdentityScreen)
 
 if __name__ == '__main__':
     g = Base()

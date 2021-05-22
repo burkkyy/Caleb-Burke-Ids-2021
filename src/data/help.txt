@@ -1,7 +1,6 @@
 Welcome to caleb's facial recognition blockchain system.
 
-The program will automaticly handle incoming and outcoming data, so the
-things you can do is create new identities and view info about the ledger
+The program will automaticly handle incoming and outcoming data
 
 How to Create Identities: 
     To create an "identity", simply click "create new identity" on the main 
