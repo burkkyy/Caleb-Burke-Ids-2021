@@ -136,22 +136,26 @@ class BlockchainNetwork:
             self.clients.append([conn, addr])
 
     def connect(self, ip, protocol="!", obj=None):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((ip, self.PORT))  # Connect to desired server
-            dump = pickle.dumps((protocol, obj))  # Create byte obj of what we want to send
-            s.sendall(dump)  # Send the byte obj
-            receive = s.recv(self.HEADER)  # Wait for a response
-            if receive:
-                receive = pickle.loads(receive)  # Decode the response
-                self.handleReceive(receive, s)  # Handle the response
-                s.sendall(DISCONNECT_MESSAGE.encode('utf-8'))  # We are done with this connection, we now send server disconnect message encoded in utf-8
-            s.close()  # Close connection between server
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((ip, self.PORT))  # Connect to desired server
+                dump = pickle.dumps((protocol, obj))  # Create byte obj of what we want to send
+                s.sendall(dump)  # Send the byte obj
+                receive = s.recv(self.HEADER)  # Wait for a response
+                if receive:
+                    receive = pickle.loads(receive)  # Decode the response
+                    self.handleReceive(receive, s)  # Handle the response
+                    s.sendall(DISCONNECT_MESSAGE.encode('utf-8'))  # We are done with this connection, we now send server disconnect message encoded in utf-8
+                s.close()  # Close connection between server
+        except socket.timeout:
+            return
 
     def createIdentity(self, name, face_encoding):
         iden, qk, pk = self.ledger.create_identity(name, face_encoding)
         self.sendToAllNetwork(iden, NEW_IDENTITY_MESSAGE)
         with open("data/keys.txt", "a+") as r:
-            r.write("\n" + qk + pk)
+            r.write(f"\n{name} {qk} {pk}")
+        return qk, pk
 
     def mineBlock(self):
         block = self.ledger.mine_block()
