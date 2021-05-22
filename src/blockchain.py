@@ -1,5 +1,5 @@
 from datetime import datetime
-import hashlib, pickle, json, os
+import hashlib, pickle, json, os, time
 import ecc as ecc
 
 P224 = ecc.EllipticCurve()
@@ -100,8 +100,11 @@ class Blockchain:
         return True
 
     def mine_block(self):
+        start = time.time()
+        print(f"[BLOCKCHAIN] mining block at {self.difficulty} difficulty...")
         block = Block(self.pending_identities, self.chain[-1].hash)
         block.mine(self.difficulty)
+        print(f"[BLOCKCHAIN] mined block {block.hash} in {time.time() - start}")
         self.chain.append(block)
         self.pending_identities = []
         return block
