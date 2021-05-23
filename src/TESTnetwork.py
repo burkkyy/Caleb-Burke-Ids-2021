@@ -7,9 +7,6 @@ socket.setdefaulttimeout(3)  # So socket.listen and socket.recv only run for 3 s
 DISCONNECT_MESSAGE = '!DISCONNECT'  # A connection is disconnected
 STATUS_MESSAGE = '!STATUS'  # Just to check for a connection
 SEND_CHAIN_MESSAGE = '!GIVECHAIN'  # We send this if we want the chain, if we receive this we send the chain
-RECEIVE_CHAIN_MESSAGE = '!CHAIN'  # We have received a copy of the chain or we are going to send the chain
-NEW_IDENTITY_MESSAGE = '!NEWIDENTITY'  # We are receving a new Identity from sender
-NEW_BLOCK_MESSAGE = '!NEWBLOCK'  # We are receving a new 'mined' block from the sender
 
 class BlockchainNetwork:
     def __init__(self):
@@ -42,10 +39,31 @@ class BlockchainNetwork:
     def sendAll(self, obj):
         dump = pickle.dumps(obj)
         for s in self.connections:
-            s.sendall(dump)
+            s[0].sendall(dump)
 
     def sendToIp(self, obj, ip):
-        pass
+        dump = pickle.dumps(obj)
+        for conn in self.connections:
+            if conn[1][0] == ip:
+                conn[0].sendall(dump)
+
+    def handleReceive(self, receive):
+        if type(receive) == blockchain.Identity:
+            print("[NET] IDENTITY")
+            self.ledger.add_identity(receive)
+        if type(receive) == blockchain.Block:
+            print("[NET] BLOCK")
+            self.ledger.add_block(receive)
+        if type(receive) == blockchain.Blockchain:
+            print("[NET] CHAIN")
+            if receive.check_integrity() != True:
+                return
+            if len(self.ledger.chain) > 1:
+                if len(receive.chain) < len(self.ledger.chain):
+                    return
+                if receive.chain[0].cal_hash() != self.ledger.chain[0].cal_hash():
+                    return
+            self.ledger = receive
 
     def handleConn(self, conn, addr):
         print(f"\n[NET] new connection from {addr}")
@@ -56,12 +74,26 @@ class BlockchainNetwork:
                 continue
             except ConnectionResetError as err:
                 print(f"[{addr}] {err}")
+                conn.close()
+                break
+            except ConnectionAbortedError as err:
+                print(f"[{addr}] {err}")
+                conn.close()
                 break
 
             if receive:
                 receive = pickle.loads(receive)
+                if receive == DISCONNECT_MESSAGE:
+                    conn.close()
+                    break
+                if receive == STATUS_MESSAGE:
+                    self.send(conn, True)
+                    continue
+                if receive == SEND_CHAIN_MESSAGE:
+                    self.send(conn, self.ledger)
+                    continue
                 print(f"[{addr}] received {receive}")
-                # self.handleReceive(receive, conn)
+                self.handleReceive(receive)
     
     def listen(self):
         print(f"[NET] server listening on {self.MY_ADDR}")
@@ -84,9 +116,7 @@ class BlockchainNetwork:
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.connect(addr)
-                self.connections.append(s)
-                thread = threading.Thread(target=self.handleConn, args=(s, addr))
-                thread.start()
+                self.connections.append([s, addr])
             except socket.timeout:
                 print(f"[NET] conn to {ip} timed out")
             except ConnectionRefusedError:
@@ -123,4 +153,7 @@ class BlockchainNetwork:
 if __name__ == '__main__':
     net = BlockchainNetwork()
     net.start()
-    net.close()
+    print("1")
+    time.sleep(10)
+    print("2")
+    net.createIdentity('Caleb', (1234, 5678))
