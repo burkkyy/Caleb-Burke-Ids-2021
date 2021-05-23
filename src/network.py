@@ -103,6 +103,7 @@ class BlockchainNetwork:
             '''
             try:
                 receive = conn.recv(self.HEADER)
+                time.sleep(2)
             except socket.timeout:
                 continue
             except ConnectionResetError as err:
@@ -137,17 +138,18 @@ class BlockchainNetwork:
 
     def connect(self, ip, protocol="!", obj=None):
         try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                print((ip, self.PORT))
-                s.connect((ip, self.PORT))  # Connect to desired server
-                dump = pickle.dumps((protocol, obj))  # Create byte obj of what we want to send
-                s.sendall(dump)  # Send the byte obj
-                receive = s.recv(self.HEADER)  # Wait for a response
-                if receive:
-                    receive = pickle.loads(receive)  # Decode the response
-                    self.handleReceive(receive, s)  # Handle the response
-                    s.sendall(DISCONNECT_MESSAGE.encode('utf-8'))  # We are done with this connection, we now send server disconnect message encoded in utf-8
-                s.close()  # Close connection between server
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((ip, self.PORT))  # Connect to desired server
+            time.sleep(2)
+            dump = pickle.dumps((protocol, obj))  # Create byte obj of what we want to send
+            s.sendall(dump)  # Send the byte obj
+            time.sleep(2)
+            receive = s.recv(self.HEADER)  # Wait for a response
+            if receive:
+                receive = pickle.loads(receive)  # Decode the response
+                self.handleReceive(receive, s)  # Handle the response
+                s.sendall(DISCONNECT_MESSAGE.encode('utf-8'))  # We are done with this connection, we now send server disconnect message encoded in utf-8
+            s.close()  # Close connection between server
         except socket.timeout:
             return
         except ConnectionRefusedError:
