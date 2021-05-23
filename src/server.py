@@ -7,9 +7,6 @@ def clear():  # to clear the console screen
     else:
         _ = system('clear')
 
-def checkNetwork(net):
-    net.sendToAllNetwork(None, network.STATUS_MESSAGE)
-
 def printConns(net):
     conns = net.get_conns()
     if conns:
@@ -50,7 +47,7 @@ def main():
 
     # Initialize user commands as callable funcs in dict commands
     commands = {
-        "whoIsUp": lambda: checkNetwork(net),
+        "whoIsUp": lambda: net.sendAll(network.STATUS_MESSAGE),
         "connections": lambda: printConns(net),
         "chain": net.ledger.print_chain,
         "chainInfo": net.ledger.printChainInfo,
