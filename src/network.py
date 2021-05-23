@@ -138,6 +138,7 @@ class BlockchainNetwork:
     def connect(self, ip, protocol="!", obj=None):
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                print((ip, self.PORT))
                 s.connect((ip, self.PORT))  # Connect to desired server
                 dump = pickle.dumps((protocol, obj))  # Create byte obj of what we want to send
                 s.sendall(dump)  # Send the byte obj
@@ -148,6 +149,8 @@ class BlockchainNetwork:
                     s.sendall(DISCONNECT_MESSAGE.encode('utf-8'))  # We are done with this connection, we now send server disconnect message encoded in utf-8
                 s.close()  # Close connection between server
         except socket.timeout:
+            return
+        except ConnectionRefusedError:
             return
 
     def createIdentity(self, name, face_encoding):
