@@ -151,9 +151,10 @@ class BlockchainNetwork:
         self.ledger.save()
 
 if __name__ == '__main__':
+    import numpy as np
     net = BlockchainNetwork()
     net.start()
     print("1")
     time.sleep(10)
     print("2")
-    net.createIdentity('Caleb', (1234, 5678))
+    net.createIdentity('Caleb', np.array([124, 124],[567, 567]))
