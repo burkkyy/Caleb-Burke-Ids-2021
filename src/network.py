@@ -94,25 +94,24 @@ class BlockchainNetwork:
                     continue
                 if receive == RECEVIE_CHAIN_START_MESSAGE:  # oh gawd
                     data = []
+                    success = False
                     while True:
-                        receive = conn.recv(self.HEADER)
-                        try: 
+                        try:
+                            receive = conn.recv(self.HEADER)
                             print(receive)
                             msg = pickle.loads(receive)
                             if msg == RECEVIE_CHAIN_END_MESSAGE:
+                                success = True
                                 break
                         except pickle.UnpicklingError:
                             data.append(receive)
                         except ConnectionResetError as err:
-                            print(f"[{addr}] {err}")
-                            self.close_connection(conn, addr)
                             break
                         except ConnectionAbortedError as err:
-                            print(f"[{addr}] {err}")
-                            self.close_connection(conn, addr)
                             break
-                    chain = pickle.loads(b''.join(data))
-                    self.handleReceive(chain)
+                    if success:
+                        chain = pickle.loads(b''.join(data))
+                        self.handleReceive(chain)
 
                 print(f"[{addr}] received {receive}")
                 self.handleReceive(receive)
