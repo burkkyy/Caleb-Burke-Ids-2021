@@ -88,10 +88,10 @@ class BlockchainNetwork:
                     self.close_connection(conn, addr)
                     break
                 if receive == STATUS_MESSAGE:
-                    self.sendToIp(conn, 'active')
+                    self.sendToIp(addr[0], 'active')
                     continue
                 if receive == SEND_CHAIN_MESSAGE:
-                    self.sendToIp(conn, self.ledger)
+                    self.sendToIp(addr[0], self.ledger)
                     continue
                 print(f"[{addr}] received {receive}")
                 self.handleReceive(receive)
@@ -146,7 +146,7 @@ class BlockchainNetwork:
         print(f"[NET] closing incoming {conn}")
         conn.close()
         for i, conn in enumerate(self.connections):
-            if conn[1] == addr:
+            if conn[1][0] == addr[0]:
                 print(f"[NET] closing outgoing {self.connections[i]}")
                 self.connections.pop(i)
 
