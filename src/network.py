@@ -35,9 +35,16 @@ class BlockchainNetwork:
         dump = pickle.dumps(obj)
         conn.sendall(dump)
 
+    def sendToIp(self, ip, obj):
+        for conn in self.connections:
+            if conn[1][0] == ip:
+                self.send(conn[0], obj)
+                return
+
     def sendAll(self, obj):
         dump = pickle.dumps(obj)
         for s in self.connections:
+            print(f"[NET] sending {obj} to {s}")
             s[0].sendall(dump)
 
     def handleReceive(self, receive):
@@ -63,27 +70,28 @@ class BlockchainNetwork:
         while self.run:
             try:
                 receive = conn.recv(self.HEADER)
+                print(receive)
             except socket.timeout:
                 continue
             except ConnectionResetError as err:
                 print(f"[{addr}] {err}")
-                conn.close()
+                self.close_connection(conn, addr)
                 break
             except ConnectionAbortedError as err:
                 print(f"[{addr}] {err}")
-                conn.close()
+                self.close_connection(conn, addr)
                 break
 
             if receive:
                 receive = pickle.loads(receive)
                 if receive == DISCONNECT_MESSAGE:
-                    conn.close()
+                    self.close_connection(conn, addr)
                     break
                 if receive == STATUS_MESSAGE:
-                    self.send(conn, True)
+                    self.sendToIp(conn, 'active')
                     continue
                 if receive == SEND_CHAIN_MESSAGE:
-                    self.send(conn, self.ledger)
+                    self.sendToIp(conn, self.ledger)
                     continue
                 print(f"[{addr}] received {receive}")
                 self.handleReceive(receive)
@@ -133,6 +141,14 @@ class BlockchainNetwork:
                 print(f"[NET] conn to {ip} timed out")
             except ConnectionRefusedError:
                 print(f"[NET] {ip} refuesed to connect")
+    
+    def close_connection(self, conn, addr):
+        print(f"[NET] closing incoming {conn}")
+        conn.close()
+        for i, conn in enumerate(self.connections):
+            if conn[1] == addr:
+                print(f"[NET] closing outgoing {self.connections[i]}")
+                self.connections.pop(i)
 
     def createIdentity(self, name, face_encoding):
         iden, qk, pk = self.ledger.create_identity(name, face_encoding)

@@ -15,6 +15,12 @@ def printConns(net):
     else:
         print("No Connections")
 
+def printSockets(net):
+    for conn in net.connections:
+        print("OUTGOING: ", conn)
+    for conn in net.clients:
+        print("INCOMING: ", conn)
+
 def printPendingIdentities(net):
     if net.ledger.pending_identities:
         for iden in net.ledger.pending_identities:
@@ -47,12 +53,13 @@ def main():
 
     # Initialize user commands as callable funcs in dict commands
     commands = {
-        "whoIsUp": lambda: net.sendAll(network.STATUS_MESSAGE),
+        "whoisup": lambda: net.sendAll(network.STATUS_MESSAGE),
+        "print_sockets": lambda: printSockets(net),
         "connections": lambda: printConns(net),
         "chain": net.ledger.print_chain,
-        "chainInfo": net.ledger.printChainInfo,
-        "pendingIdentities": lambda: printPendingIdentities(net),
-        "clearOutPendingIdentities": lambda: deletePendingIdentities(net),
+        "chain_info": net.ledger.printChainInfo,
+        "pending_identities": lambda: printPendingIdentities(net),
+        "clear_out_pending_identities": lambda: deletePendingIdentities(net),
         "mine": net.mineBlock,
         "clear": clear,
         "cls": clear,
