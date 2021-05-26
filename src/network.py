@@ -96,17 +96,34 @@ class BlockchainNetwork:
                 conn, addr = self.server.accept()  # socket.timeout is raise in 3 secs in no incoming conn
             except socket.timeout:  # socket.timeout so server.accept() doesnt run forever
                 continue
-
+            
             self.clients.append([conn, addr])  # then append a ptr of the socket to clients
             thread = threading.Thread(target=self.handleConn, args=(conn, addr))  # We got a new conn, so we handle it on a seprate thread
             thread.start()
 
+    def connect(self, ip):
+        for conn in self.connections:
+            if conn[1][0] == ip:
+                return
+        try:
+            addr = (ip, self.PORT)
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect(addr)
+            print(f"[NET] connected to {addr}")
+            self.connections.append([s, addr])
+            print(self.connections)
+        except socket.timeout:
+                print(f"[NET] conn to {ip} timed out")
+        except ConnectionRefusedError:
+            print(f"[NET] {ip} refuesed to connect")
+
     def connectToNetwork(self):
         for ip in self.network_IPS:
+            print(ip, self.MY_IP)
             if ip == self.MY_IP:
-                break
-            addr = (ip, self.PORT)
+                continue
             try:
+                addr = (ip, self.PORT)
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.connect(addr)
                 print(f"[NET] connected to {addr}")

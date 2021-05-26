@@ -43,7 +43,7 @@ def main():
     # Start the network
     net = network.BlockchainNetwork()
     net.start()
-    clear()
+    # clear()
 
     # Initialize user commands as callable funcs in dict commands
     commands = {
