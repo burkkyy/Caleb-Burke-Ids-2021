@@ -138,7 +138,7 @@ class Blockchain:
             return False
         for identity in block.identities:
             for i, iden in enumerate(self.pending_identities):
-                if identity.hash == iden.hash:
+                if identity.cal_hash == iden.cal_hash:
                     self.pending_identities.pop(i)
         self.chain.append(block)
         return True

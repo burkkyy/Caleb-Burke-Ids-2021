@@ -166,6 +166,7 @@ class BlockchainNetwork:
         thread = threading.Thread(target=self.listen)
         thread.start()
         self.connectToNetwork()
+        self.sendAll(SEND_CHAIN_MESSAGE)
 
     def close(self):
         self.sendAll(DISCONNECT_MESSAGE)  # Not sendToAllNetwork because we only need to disconnect from current conns
