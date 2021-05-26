@@ -1,13 +1,12 @@
 import blockchain
 import threading, socket, pickle, time  # All part of Python standard libary
-socket.setdefaulttimeout(5)  # So socket.listen and socket.recv only run for 3 seconds to prevent program hanging
+socket.setdefaulttimeout(10)  # So socket.listen and socket.recv only run for 3 seconds to prevent program hanging
 
 # These are commands we may receive
 DISCONNECT_MESSAGE = '!DISCONNECT'  # A connection is disconnected
 STATUS_MESSAGE = '!STATUS'  # Just to check for a connection
+BIG_MESSAGE = '!BIG'  # we are about to receive a large message
 SEND_CHAIN_MESSAGE = '!GIVECHAIN'  # We send this if we want the chain, if we receive this we send the chain
-RECEVIE_CHAIN_START_MESSAGE = '!STARTCHAIN'  # If we are recevicing the chain, we must handle it differently as it is a big file
-RECEVIE_CHAIN_END_MESSAGE = '!ENDCHAIN'  # If we are recevicing the chain, we must handle it differently as it is a big file
 
 class BlockchainNetwork:
     def __init__(self):
@@ -47,13 +46,13 @@ class BlockchainNetwork:
 
     def handleReceive(self, receive):
         if type(receive) == blockchain.Identity:
-            print("[NET] IDENTITY")
+            print("[NET] RECEIVED IDENTITY")
             self.ledger.add_identity(receive)
         if type(receive) == blockchain.Block:
-            print("[NET] BLOCK")
+            print("[NET] RECEIVED BLOCK")
             self.ledger.add_block(receive)
         if type(receive) == blockchain.Blockchain:
-            print("[NET] CHAIN")
+            print("[NET] RECEIVED CHAIN")
             if receive.check_integrity() != True:
                 return
             if len(self.ledger.chain) > 1:
@@ -64,10 +63,31 @@ class BlockchainNetwork:
             self.ledger = receive
 
     def handleConn(self, conn, addr):
+        # this is a mess
         print(f"\n[NET] new connection from {addr}")
         while self.run:
             try:
                 receive = conn.recv(self.HEADER)
+                if not receive: continue
+                msg = pickle.loads(receive)
+                if msg == DISCONNECT_MESSAGE:
+                    self.close_connection(conn, addr)
+                    break
+                if msg == STATUS_MESSAGE:
+                    self.sendToIp(addr[0], 'active')
+                    continue
+                if msg == SEND_CHAIN_MESSAGE:
+                    self.sendToIp(addr[0], BIG_MESSAGE)
+                    time.sleep(2)
+                    self.sendToIp(addr[0], self.ledger)
+                    continue
+                if msg == BIG_MESSAGE:
+                    data = []
+                    while True:
+                        receive = conn.recv(self.HEADER)
+                        if not receive: break
+                        data.append(receive)
+                    msg = pickle.loads(b''.join(data))
             except socket.timeout:
                 continue
             except ConnectionResetError as err:
@@ -78,43 +98,10 @@ class BlockchainNetwork:
                 print(f"[{addr}] {err}")
                 self.close_connection(conn, addr)
                 break
-
-            if receive:
-                receive = pickle.loads(receive)
-                if receive == DISCONNECT_MESSAGE:
-                    self.close_connection(conn, addr)
-                    break
-                if receive == STATUS_MESSAGE:
-                    self.sendToIp(addr[0], 'active')
-                    continue
-                if receive == SEND_CHAIN_MESSAGE:
-                    self.sendToIp(addr[0], RECEVIE_CHAIN_START_MESSAGE)
-                    self.sendToIp(addr[0], self.ledger)
-                    self.sendToIp(addr[0], RECEVIE_CHAIN_END_MESSAGE)
-                    continue
-                if receive == RECEVIE_CHAIN_START_MESSAGE:  # oh gawd
-                    data = []
-                    success = False
-                    while True:
-                        try:
-                            receive = conn.recv(self.HEADER)
-                            print(receive)
-                            msg = pickle.loads(receive)
-                            if msg == RECEVIE_CHAIN_END_MESSAGE:
-                                success = True
-                                break
-                        except pickle.UnpicklingError:
-                            data.append(receive)
-                        except ConnectionResetError as err:
-                            break
-                        except ConnectionAbortedError as err:
-                            break
-                    if success:
-                        chain = pickle.loads(b''.join(data))
-                        self.handleReceive(chain)
-
-                print(f"[{addr}] received {receive}")
-                self.handleReceive(receive)
+            except pickle.UnpicklingError:
+                continue
+            print(f"[{addr}] received {type(msg)}")
+            self.handleReceive(receive)
     
     def listen(self):
         print(f"[NET] server listening on {self.MY_ADDR}")
@@ -175,6 +162,8 @@ class BlockchainNetwork:
 
     def mineBlock(self):
         block = self.ledger.mine_block()
+        self.sendAll(BIG_MESSAGE)
+        time.sleep(2)
         self.sendAll(block)
 
     def get_conns(self):
@@ -191,7 +180,6 @@ class BlockchainNetwork:
         thread = threading.Thread(target=self.listen)
         thread.start()
         self.connectToNetwork()
-        time.sleep(3)
         self.sendAll(SEND_CHAIN_MESSAGE)
 
     def close(self):
