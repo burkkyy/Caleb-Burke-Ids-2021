@@ -24,5 +24,6 @@ Date		time in - time out	total hours
 2021-04-15      5:00pm - 10pm     5hours 
 2021-05-19	1:00pm - 5:00pm       4hours
 2021-05-20  9:00pm - 2:00am       5hours
-2021-05-21  1:00pm -
+2021-05-21  1:00pm - 5:00pm       4hours
+2021-05-22  1:00pm - 1:00am       12hours
 TOTAL: ?
