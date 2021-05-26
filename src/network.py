@@ -143,12 +143,16 @@ class BlockchainNetwork:
                 print(f"[NET] {ip} refuesed to connect")
     
     def close_connection(self, conn, addr):
-        print(f"[NET] closing incoming {conn}")
-        conn.close()
         for i, conn in enumerate(self.connections):
             if conn[1][0] == addr[0]:
                 print(f"[NET] closing outgoing {self.connections[i]}")
+                conn[0].close()
                 self.connections.pop(i)
+        for i, conn in enumerate(self.clients):
+            if conn[1][0] == addr[0]:
+                print(f"[NET] closing incoming {self.clients[i]}")
+                conn[0].close()
+                self.clients.pop(i)
 
     def createIdentity(self, name, face_encoding):
         iden, qk, pk = self.ledger.create_identity(name, face_encoding)
