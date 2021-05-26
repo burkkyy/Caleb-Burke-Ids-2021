@@ -91,12 +91,12 @@ class BlockchainNetwork:
     def listen(self):
         print(f"[NET] server listening on {self.MY_ADDR}")
         self.server.listen()
-        while self.run:            
+        while self.run:
             try:
                 conn, addr = self.server.accept()  # socket.timeout is raise in 3 secs in no incoming conn
             except socket.timeout:  # socket.timeout so server.accept() doesnt run forever
                 continue
-            
+            self.connect(addr[0])
             self.clients.append([conn, addr])  # then append a ptr of the socket to clients
             thread = threading.Thread(target=self.handleConn, args=(conn, addr))  # We got a new conn, so we handle it on a seprate thread
             thread.start()
@@ -104,6 +104,7 @@ class BlockchainNetwork:
     def connect(self, ip):
         for conn in self.connections:
             if conn[1][0] == ip:
+                print("Already connected")
                 return
         try:
             addr = (ip, self.PORT)
@@ -145,7 +146,10 @@ class BlockchainNetwork:
         self.sendAll(block)
 
     def get_conns(self):
-        return self.clients
+        conns = []
+        for conn in self.connections:
+            conns.append(conn[1])
+        return conns
 
     def get_faces(self):
         return self.ledger.get_all_faces()
