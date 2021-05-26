@@ -1,6 +1,6 @@
 import blockchain
 import threading, socket, pickle, time  # All part of Python standard libary
-socket.setdefaulttimeout(3)  # So socket.listen and socket.recv only run for 3 seconds to prevent program hanging
+socket.setdefaulttimeout(5)  # So socket.listen and socket.recv only run for 3 seconds to prevent program hanging
 
 # These are commands we may receive
 DISCONNECT_MESSAGE = '!DISCONNECT'  # A connection is disconnected
@@ -192,6 +192,7 @@ class BlockchainNetwork:
         thread = threading.Thread(target=self.listen)
         thread.start()
         self.connectToNetwork()
+        time.sleep(3)
         self.sendAll(SEND_CHAIN_MESSAGE)
 
     def close(self):
