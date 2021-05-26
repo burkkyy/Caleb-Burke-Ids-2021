@@ -58,6 +58,7 @@ def main():
         "connections": lambda: printConns(net),
         "chain": net.ledger.print_chain,
         "chain_info": net.ledger.printChainInfo,
+        "receive_chain": lambda: net.sendAll(network.SEND_CHAIN_MESSAGE),
         "pending_identities": lambda: printPendingIdentities(net),
         "clear_out_pending_identities": lambda: deletePendingIdentities(net),
         "mine": net.mineBlock,

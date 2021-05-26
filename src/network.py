@@ -6,6 +6,8 @@ socket.setdefaulttimeout(3)  # So socket.listen and socket.recv only run for 3 s
 DISCONNECT_MESSAGE = '!DISCONNECT'  # A connection is disconnected
 STATUS_MESSAGE = '!STATUS'  # Just to check for a connection
 SEND_CHAIN_MESSAGE = '!GIVECHAIN'  # We send this if we want the chain, if we receive this we send the chain
+RECEVIE_CHAIN_START_MESSAGE = '!STARTCHAIN'  # If we are recevicing the chain, we must handle it differently as it is a big file
+RECEVIE_CHAIN_END_MESSAGE = '!ENDCHAIN'  # If we are recevicing the chain, we must handle it differently as it is a big file
 
 class BlockchainNetwork:
     def __init__(self):
@@ -86,8 +88,32 @@ class BlockchainNetwork:
                     self.sendToIp(addr[0], 'active')
                     continue
                 if receive == SEND_CHAIN_MESSAGE:
+                    self.sendToIp(addr[0], RECEVIE_CHAIN_START_MESSAGE)
                     self.sendToIp(addr[0], self.ledger)
+                    self.sendToIp(addr[0], RECEVIE_CHAIN_END_MESSAGE)
                     continue
+                if receive == RECEVIE_CHAIN_START_MESSAGE:  # oh gawd
+                    data = []
+                    while True:
+                        receive = conn.recv(self.HEADER)
+                        try: 
+                            print(receive)
+                            msg = pickle.loads(receive)
+                            if msg == RECEVIE_CHAIN_END_MESSAGE:
+                                break
+                        except pickle.UnpicklingError:
+                            data.append(receive)
+                        except ConnectionResetError as err:
+                            print(f"[{addr}] {err}")
+                            self.close_connection(conn, addr)
+                            break
+                        except ConnectionAbortedError as err:
+                            print(f"[{addr}] {err}")
+                            self.close_connection(conn, addr)
+                            break
+                    chain = pickle.loads(b''.join(data))
+                    self.handleReceive(chain)
+
                 print(f"[{addr}] received {receive}")
                 self.handleReceive(receive)
     
