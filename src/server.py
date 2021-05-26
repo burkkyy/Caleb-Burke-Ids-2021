@@ -17,9 +17,9 @@ def printConns(net):
 
 def printSockets(net):
     for conn in net.connections:
-        print("OUTGOING: ", conn)
+        print("OUTGOING: ", conn[1])
     for conn in net.clients:
-        print("INCOMING: ", conn)
+        print("INCOMING: ", conn[1])
 
 def printPendingIdentities(net):
     if net.ledger.pending_identities:
@@ -49,7 +49,7 @@ def main():
     # Start the network
     net = network.BlockchainNetwork()
     net.start()
-    # clear()
+    clear()
 
     # Initialize user commands as callable funcs in dict commands
     commands = {

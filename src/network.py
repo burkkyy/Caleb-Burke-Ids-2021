@@ -20,7 +20,7 @@ class BlockchainNetwork:
         with open("data/network_Ips.txt", "r") as r:
             for line in r.readlines():
                 self.network_IPS.append(line.strip("\n"))
-        print(f"network ips: {self.network_IPS}")
+        # print(f"network ips: {self.network_IPS}")
 
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Create a socket obj for listening
         self.server.bind(self.MY_ADDR)  # 'Bind' it on this machine on port 5050
@@ -28,10 +28,6 @@ class BlockchainNetwork:
         self.connections = []  # Store all outgoing sockets
 
     def send(self, conn, obj):
-        """
-        conn: Ptr of the socket obj we wish to send to
-        obj: Object we wish to send
-        """
         dump = pickle.dumps(obj)
         conn.sendall(dump)
 
@@ -70,7 +66,6 @@ class BlockchainNetwork:
         while self.run:
             try:
                 receive = conn.recv(self.HEADER)
-                print(receive)
             except socket.timeout:
                 continue
             except ConnectionResetError as err:
@@ -112,45 +107,37 @@ class BlockchainNetwork:
     def connect(self, ip):
         for conn in self.connections:
             if conn[1][0] == ip:
-                print("Already connected")
+                # print("Already connected")
                 return
         try:
             addr = (ip, self.PORT)
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect(addr)
-            print(f"[NET] connected to {addr}")
+            # print(f"[NET] connected to {addr}")
             self.connections.append([s, addr])
             print(self.connections)
         except socket.timeout:
-                print(f"[NET] conn to {ip} timed out")
+                # print(f"[NET] conn to {ip} timed out")
+                pass
         except ConnectionRefusedError:
-            print(f"[NET] {ip} refuesed to connect")
+            # print(f"[NET] {ip} refuesed to connect")
+            pass
 
     def connectToNetwork(self):
         for ip in self.network_IPS:
-            print(ip, self.MY_IP)
             if ip == self.MY_IP:
                 continue
-            try:
-                addr = (ip, self.PORT)
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.connect(addr)
-                print(f"[NET] connected to {addr}")
-                self.connections.append([s, addr])
-            except socket.timeout:
-                print(f"[NET] conn to {ip} timed out")
-            except ConnectionRefusedError:
-                print(f"[NET] {ip} refuesed to connect")
+            self.connect(ip)
     
     def close_connection(self, conn, addr):
         for i, conn in enumerate(self.connections):
             if conn[1][0] == addr[0]:
-                print(f"[NET] closing outgoing {self.connections[i]}")
+                # print(f"[NET] closing outgoing {self.connections[i]}")
                 conn[0].close()
                 self.connections.pop(i)
         for i, conn in enumerate(self.clients):
             if conn[1][0] == addr[0]:
-                print(f"[NET] closing incoming {self.clients[i]}")
+                # print(f"[NET] closing incoming {self.clients[i]}")
                 conn[0].close()
                 self.clients.pop(i)
 

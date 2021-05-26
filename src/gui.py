@@ -121,7 +121,7 @@ class MainScreen(tk.Frame):
         if conns:
             lines = []
             for i, conn in enumerate(conns):
-                lines.append(f"Connection #{i}: {conn}")
+                lines.append(f"Connection #{i + 1}: {conn}")
             txt = '\n'.join(lines)
             messagebox.showinfo("Connections", txt)
         else:
