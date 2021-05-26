@@ -49,8 +49,7 @@ def main():
     # Start the network
     net = network.BlockchainNetwork()
     net.start()
-    clear()
-
+    
     # Initialize user commands as callable funcs in dict commands
     commands = {
         "whoisup": lambda: net.sendAll(network.STATUS_MESSAGE),

@@ -137,6 +137,10 @@ class BlockchainNetwork:
 
     def connectToNetwork(self):
         for ip in self.network_IPS:
+            for conn in self.connections:
+                if conn[1][0] == ip:
+                    # print("Already connected")
+                    break
             if ip == self.MY_IP:
                 continue
             self.connect(ip)
