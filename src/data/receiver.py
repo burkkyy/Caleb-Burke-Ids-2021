@@ -25,6 +25,7 @@ while True:
         if len(full_msg)-HEADERSIZE == msglen:
             print("full msg recvd")
             print(full_msg[HEADERSIZE:])
-            print(pickle.loads(full_msg[HEADERSIZE:]))
+            m = pickle.loads(full_msg[HEADERSIZE:])
+            print(m)
             new_msg = True
             full_msg = b""

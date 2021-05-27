@@ -1,11 +1,10 @@
 import blockchain
 import threading, socket, pickle, time  # All part of Python standard libary
-socket.setdefaulttimeout(10)  # So socket.listen and socket.recv only run for 3 seconds to prevent program hanging
+socket.setdefaulttimeout(5)  # So socket.listen and socket.recv only run for 3 seconds to prevent program hanging
 
 # These are commands we may receive
 DISCONNECT_MESSAGE = '!DISCONNECT'  # A connection is disconnected
 STATUS_MESSAGE = '!STATUS'  # Just to check for a connection
-BIG_MESSAGE = '!BIG'  # we are about to receive a large message
 SEND_CHAIN_MESSAGE = '!GIVECHAIN'  # We send this if we want the chain, if we receive this we send the chain
 
 class BlockchainNetwork:
@@ -68,7 +67,7 @@ class BlockchainNetwork:
         new_msg = True
         while self.run:
             try:
-                msg = conn.recv(self.HEADER)
+                msg = conn.recv(16)
                 if new_msg:
                     print("new msg len:", msg[:self.HEADER])
                     msg_length = int(msg[:self.HEADER])
@@ -82,15 +81,18 @@ class BlockchainNetwork:
                     received_msg = pickle.loads(full_msg[self.HEADER:])
                     new_msg = True
                     full_msg = b''
-                    print(f"[{addr}] received {type(msg)}")
-                    
+                    print(f"[{addr}] received {received_msg}")
+
                     if msg == DISCONNECT_MESSAGE:
+                        print(1)
                         self.close_connection(conn, addr)
                         break
                     if msg == STATUS_MESSAGE:
+                        print(2)
                         self.sendToIp(addr[0], 'active')
                         continue
                     if msg == SEND_CHAIN_MESSAGE:
+                        print(3)
                         self.sendToIp(addr[0], self.ledger)
                         continue
                     self.handleReceive(received_msg)
@@ -169,8 +171,6 @@ class BlockchainNetwork:
 
     def mineBlock(self):
         block = self.ledger.mine_block()
-        self.sendAll(BIG_MESSAGE)
-        time.sleep(2)
         self.sendAll(block)
 
     def get_conns(self):
@@ -187,9 +187,10 @@ class BlockchainNetwork:
         thread = threading.Thread(target=self.listen)
         thread.start()
         self.connectToNetwork()
+        time.sleep(3)
         self.sendAll(SEND_CHAIN_MESSAGE)
 
     def close(self):
-        self.sendAll(DISCONNECT_MESSAGE)  # Not sendToAllNetwork because we only need to disconnect from current conns
+        self.sendAll(DISCONNECT_MESSAGE)  # Not send to network because we only need to disconnect from current conns
         self.run = False
         self.ledger.save()
