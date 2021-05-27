@@ -11,7 +11,7 @@ class BlockchainNetwork:
     def __init__(self):
         self.ledger = blockchain.Blockchain()
         self.HEADER = 4069  # Expected file receive size, 4 kilobytes
-        self.PORT = 5050  # The port in which we will be 'listening and talking' through
+        self.PORT = 72003  # The port in which we will be 'listening and talking' through
         self.MY_IP = socket.gethostbyname(socket.gethostname())  # find my local ip
         self.MY_ADDR = (self.MY_IP, self.PORT)
         self.run = True  # If the network should be active
@@ -68,7 +68,7 @@ class BlockchainNetwork:
         new_msg = True
         while self.run:
             try:
-                msg = conn.recv(16)
+                msg = conn.recv(self.HEADER)
                 if new_msg:
                     print("new msg len:", msg[:self.HEADER])
                     msg_length = int(msg[:self.HEADER])
@@ -84,15 +84,15 @@ class BlockchainNetwork:
                     full_msg = b''
                     print(f"[{addr}] received {received_msg}")
 
-                    if msg == DISCONNECT_MESSAGE:
+                    if received_msg == DISCONNECT_MESSAGE:
                         print(1)
                         self.close_connection(conn, addr)
                         break
-                    if msg == STATUS_MESSAGE:
+                    if received_msg == STATUS_MESSAGE:
                         print(2)
                         self.sendToIp(addr[0], 'active')
                         continue
-                    if msg == SEND_CHAIN_MESSAGE:
+                    if received_msg == SEND_CHAIN_MESSAGE:
                         print(3)
                         self.sendToIp(addr[0], self.ledger)
                         continue
@@ -110,7 +110,7 @@ class BlockchainNetwork:
                 break
 
     def listen(self):
-        print(f"[NET] server listening on {self.MY_ADDR}")
+        print(f"[NET] server listening on {self.server}")
         self.server.listen()
         while self.run:
             try:
@@ -136,8 +136,8 @@ class BlockchainNetwork:
             self.connections.append([s, addr])
             print(self.connections)
         except socket.timeout:
-                print(f"[NET] conn to {ip} timed out")
-                pass
+            print(f"[NET] conn to {ip} timed out")
+            pass
         except ConnectionRefusedError:
             print(f"[NET] {ip} refuesed to connect")
             pass
@@ -184,8 +184,8 @@ class BlockchainNetwork:
         # to start the network we create a listen thread for incoming connections
         thread = threading.Thread(target=self.listen)
         thread.start()
+        time.sleep(3)
         self.connectToNetwork()
-        self.sendAll(SEND_CHAIN_MESSAGE)
 
     def close(self):
         self.sendAll(DISCONNECT_MESSAGE)  # Not send to network because we only need to disconnect from current conns

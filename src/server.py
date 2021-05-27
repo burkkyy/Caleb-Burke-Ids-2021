@@ -49,11 +49,12 @@ def main():
     # Start the network
     net = network.BlockchainNetwork()
     net.start()
-    
+
     # Initialize user commands as callable funcs in dict commands
     commands = {
         "whoisup": lambda: net.sendAll(network.STATUS_MESSAGE),
-        "print_sockets": lambda: printSockets(net),
+        "sockets": lambda: printSockets(net),
+        "connect": net.connectToNetwork,
         "connections": lambda: printConns(net),
         "chain": net.ledger.print_chain,
         "chain_info": net.ledger.printChainInfo,
