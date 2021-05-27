@@ -28,6 +28,7 @@ class BlockchainNetwork:
         self.connections = []  # Store all outgoing sockets
 
     def send(self, conn, obj):
+        time.sleep(3)
         dump = pickle.dumps(obj)
         msg = bytes(f'{len(dump):<{self.HEADER}}', 'utf-8') + dump
         conn.send(msg)
@@ -124,28 +125,25 @@ class BlockchainNetwork:
     def connect(self, ip):
         for conn in self.connections:
             if conn[1][0] == ip:
-                # print("Already connected")
+                print("Already connected")
                 return
         try:
             addr = (ip, self.PORT)
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            print(f"[NET] connecting to {addr}...")
             s.connect(addr)
-            # print(f"[NET] connected to {addr}")
+            print(f"[NET] connected to {addr}")
             self.connections.append([s, addr])
             print(self.connections)
         except socket.timeout:
-                # print(f"[NET] conn to {ip} timed out")
+                print(f"[NET] conn to {ip} timed out")
                 pass
         except ConnectionRefusedError:
-            # print(f"[NET] {ip} refuesed to connect")
+            print(f"[NET] {ip} refuesed to connect")
             pass
 
     def connectToNetwork(self):
         for ip in self.network_IPS:
-            for conn in self.connections:
-                if conn[1][0] == ip:
-                    # print("Already connected")
-                    break
             if ip == self.MY_IP:
                 continue
             self.connect(ip)
@@ -187,7 +185,6 @@ class BlockchainNetwork:
         thread = threading.Thread(target=self.listen)
         thread.start()
         self.connectToNetwork()
-        time.sleep(3)
         self.sendAll(SEND_CHAIN_MESSAGE)
 
     def close(self):
