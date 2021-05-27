@@ -11,7 +11,7 @@ class BlockchainNetwork:
     def __init__(self):
         self.ledger = blockchain.Blockchain()
         self.HEADER = 4069  # Expected file receive size, 4 kilobytes
-        self.PORT = 72003  # The port in which we will be 'listening and talking' through
+        self.PORT = 5050  # The port in which we will be 'listening and talking' through
         self.MY_IP = socket.gethostbyname(socket.gethostname())  # find my local ip
         self.MY_ADDR = (self.MY_IP, self.PORT)
         self.run = True  # If the network should be active
