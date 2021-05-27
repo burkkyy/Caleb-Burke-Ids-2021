@@ -30,7 +30,8 @@ class BlockchainNetwork:
 
     def send(self, conn, obj):
         dump = pickle.dumps(obj)
-        conn.sendall(dump)
+        msg = bytes(f'{len(dump):<{self.HEADER}}', 'utf-8') + dump
+        conn.send(msg)
 
     def sendToIp(self, ip, obj):
         for conn in self.connections:
@@ -39,70 +40,72 @@ class BlockchainNetwork:
                 return
 
     def sendAll(self, obj):
-        dump = pickle.dumps(obj)
         for s in self.connections:
-            print(f"[NET] sending {obj} to {s}")
-            s[0].sendall(dump)
+            print(f"[NET] sending {obj} to {s[1]}")
+            self.send(s[0], obj)
 
-    def handleReceive(self, receive):
-        if type(receive) == blockchain.Identity:
+    def handleReceive(self, msg):
+        if type(msg) == blockchain.Identity:
             print("[NET] RECEIVED IDENTITY")
-            self.ledger.add_identity(receive)
-        if type(receive) == blockchain.Block:
+            self.ledger.add_identity(msg)
+        elif type(msg) == blockchain.Block:
             print("[NET] RECEIVED BLOCK")
-            self.ledger.add_block(receive)
-        if type(receive) == blockchain.Blockchain:
+            self.ledger.add_block(msg)
+        elif type(msg) == blockchain.Blockchain:
             print("[NET] RECEIVED CHAIN")
-            if receive.check_integrity() != True:
+            if msg.check_integrity() != True:
                 return
             if len(self.ledger.chain) > 1:
-                if len(receive.chain) < len(self.ledger.chain):
+                if len(msg.chain) < len(self.ledger.chain):
                     return
-                if receive.chain[0].cal_hash() != self.ledger.chain[0].cal_hash():
+                if msg.chain[0].cal_hash() != self.ledger.chain[0].cal_hash():
                     return
-            self.ledger = receive
+            self.ledger = msg
 
     def handleConn(self, conn, addr):
-        # this is a mess
         print(f"\n[NET] new connection from {addr}")
+        full_msg = b''
+        new_msg = True
         while self.run:
             try:
-                receive = conn.recv(self.HEADER)
-                if not receive: continue
-                msg = pickle.loads(receive)
-                if msg == DISCONNECT_MESSAGE:
-                    self.close_connection(conn, addr)
-                    break
-                if msg == STATUS_MESSAGE:
-                    self.sendToIp(addr[0], 'active')
-                    continue
-                if msg == SEND_CHAIN_MESSAGE:
-                    self.sendToIp(addr[0], BIG_MESSAGE)
-                    time.sleep(2)
-                    self.sendToIp(addr[0], self.ledger)
-                    continue
-                if msg == BIG_MESSAGE:
-                    data = []
-                    while True:
-                        receive = conn.recv(self.HEADER)
-                        if not receive: break
-                        data.append(receive)
-                    msg = pickle.loads(b''.join(data))
+                msg = conn.recv(self.HEADER)
+                if new_msg:
+                    print("new msg len:", msg[:self.HEADER])
+                    msg_length = int(msg[:self.HEADER])
+                    new_msg = False
+                print(f"full msg length: {msg_length}")
+                full_msg += msg
+                print(len(full_msg))
+                if len(full_msg)-self.HEADER == msg_length:
+                    print("full msg recvd")
+                    print(full_msg[self.HEADER:])
+                    received_msg = pickle.loads(full_msg[self.HEADER:])
+                    new_msg = True
+                    full_msg = b''
+                    print(f"[{addr}] received {type(msg)}")
+                    
+                    if msg == DISCONNECT_MESSAGE:
+                        self.close_connection(conn, addr)
+                        break
+                    if msg == STATUS_MESSAGE:
+                        self.sendToIp(addr[0], 'active')
+                        continue
+                    if msg == SEND_CHAIN_MESSAGE:
+                        self.sendToIp(addr[0], self.ledger)
+                        continue
+                    self.handleReceive(received_msg)
+                    
             except socket.timeout:
                 continue
-            except ConnectionResetError as err:
-                print(f"[{addr}] {err}")
-                self.close_connection(conn, addr)
-                break
             except ConnectionAbortedError as err:
                 print(f"[{addr}] {err}")
                 self.close_connection(conn, addr)
                 break
-            except pickle.UnpicklingError:
-                continue
-            print(f"[{addr}] received {type(msg)}")
-            self.handleReceive(receive)
-    
+            except ConnectionResetError as err:
+                print(f"[{addr}] {err}")
+                self.close_connection(conn, addr)
+                break
+
     def listen(self):
         print(f"[NET] server listening on {self.MY_ADDR}")
         self.server.listen()
