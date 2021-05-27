@@ -127,14 +127,19 @@ class Blockchain:
 
     def add_block(self, block):
         if type(block) != Block:
+            print("FAILED #1")
             return False
         if block.hash != block.cal_hash():
+            print("FAILED #2")
             return False
         if block.hash[:self.difficulty] != "0"*self.difficulty:
+            print("FAILED #3")
             return False
         if block.prevHash != self.chain[-1].hash:
+            print("FAILED #4")
             return False
         if not block.has_valid_identities():
+            print("FAILED #5")
             return False
         for identity in block.identities:
             for i, iden in enumerate(self.pending_identities):

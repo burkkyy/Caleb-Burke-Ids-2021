@@ -47,7 +47,7 @@ class Base(tk.Tk):  # inherent from tk.Tk class
         tk.Tk.geometry(self, f"{width}x{height}")
 
     def getConns(self):
-        return self.net.get_conns()
+        return self.net.get_sockets()[0]
 
     def getLedgerIntegrity(self):
         return self.net.ledger.check_integrity()

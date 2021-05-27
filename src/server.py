@@ -1,4 +1,5 @@
 from os import system, name
+# import network
 import network
 
 def clear():  # to clear the console screen
@@ -8,18 +9,19 @@ def clear():  # to clear the console screen
         _ = system('clear')
 
 def printConns(net):
-    conns = net.get_conns()
-    if conns:
+    conns, _ = net.get_sockets()
+    if len(conns) > 0:
         for conn in conns:
             print(conn)
     else:
         print("No Connections")
 
 def printSockets(net):
-    for conn in net.connections:
-        print("OUTGOING: ", conn[1])
-    for conn in net.clients:
-        print("INCOMING: ", conn[1])
+    outs, ins = net.get_sockets()
+    for out in outs:
+        print("OUTGOING: ", out)
+    for inz in ins:
+        print("INCOMING: ", inz)
 
 def printPendingIdentities(net):
     if net.ledger.pending_identities:
@@ -56,8 +58,8 @@ def main():
         "sockets": lambda: printSockets(net),
         "connect": net.connectToNetwork,
         "connections": lambda: printConns(net),
-        "chain": net.ledger.print_chain,
-        "chain_info": net.ledger.printChainInfo,
+        "chain": net.print_chain,
+        "chain_info": net.print_chain_info,
         "receive_chain": lambda: net.sendAll(network.SEND_CHAIN_MESSAGE),
         "pending_identities": lambda: printPendingIdentities(net),
         "clear_out_pending_identities": lambda: deletePendingIdentities(net),
