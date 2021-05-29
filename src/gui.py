@@ -64,6 +64,9 @@ class Base(tk.Tk):  # inherent from tk.Tk class
             )
         )
         return filepath
+
+    def mine(self):
+        self.net.mineBlock()
     
     def get_faces(self):
         return self.net.get_faces()
@@ -97,9 +100,10 @@ class MainScreen(tk.Frame):
         # Initialize the screen buttons and labels
         titleLabel = tk.Label(self, text="Start Page", font=TITLE_FONT, padx=5, pady=5)
         openLedgerButton = tk.Button(self, text="Open Ledger", command=lambda: self.controller.showFrame(OpenLedgerScreen))
-        checkLedgerIntegrityButton = tk.Button(self, text="Check Integrity of Ledger", command=self.ledgerIntegrityBox)
         createIdentityButton = tk.Button(self, text="Create New Identity", command=lambda: self.controller.showFrame(CreateIdentityScreen))
+        mineBlockButton = tk.Button(self, text="Mine a block", command=self.controller.mine)
         scanImageButton = tk.Button(self, text="Scan image for Identities", command=lambda: self.controller.showFrame(ScanImageScreen))
+        checkLedgerIntegrityButton = tk.Button(self, text="Check Integrity of Ledger", command=self.ledgerIntegrityBox)
         showActiveConnsButton = tk.Button(self, text="Show active connections", command=self.showConnsBox)
         helpButton = tk.Button(self, text="Help", command=self.helpBox)
         quitButton = tk.Button(self, text="Quit", command=self.controller.quit)
@@ -107,12 +111,13 @@ class MainScreen(tk.Frame):
         # Add them onto the screen using .grid()
         titleLabel.grid(row=0, column=0, sticky="N")
         openLedgerButton.grid(row=1, column=0, sticky="NESW")
-        checkLedgerIntegrityButton.grid(row=2, column=0, sticky="NESW")
         createIdentityButton.grid(row=3, column=0, sticky="NESW")
-        scanImageButton.grid(row=4, column=0, sticky="NESW")
+        mineBlockButton.grid(row=4, column=0, sticky="NESW")
+        scanImageButton.grid(row=5, column=0, sticky="NESW")
+        checkLedgerIntegrityButton.grid(row=6, column=0, sticky="NESW")
         showActiveConnsButton.grid(row=5, column=0, sticky="NESW")
-        helpButton.grid(row=6, column=0, sticky="NESW")
-        quitButton.grid(row=7, column=0, sticky="NESW")
+        helpButton.grid(row=7, column=0, sticky="NESW")
+        quitButton.grid(row=8, column=0, sticky="NESW")
 
     def ledgerIntegrityBox(self):
         integrity = self.controller.getLedgerIntegrity()
