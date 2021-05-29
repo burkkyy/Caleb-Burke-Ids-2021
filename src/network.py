@@ -136,17 +136,21 @@ class BlockchainNetwork:
         self.server.listen()
         print(f"[NET] listening on {self.server.getsockname()}...")
         while self.run:
-            try: conn, addr = self.server.accept()
+            try: 
+                conn, addr = self.server.accept()
+                print(conn.getsockname(), addr)
             except socket.timeout: continue
             for sock in self.clients:
-                if sock.getsockname()[0] == addr[0]:
+                print(sock.getsockname()[0], addr[0])
+                if sock.getsockname()[0] == conn.getsockname()[0]:
                     conn.close()
-                    continue
-            thread = threading.Thread(target=self.handle_client, args=(conn, addr))
-            thread.start()
-            self.clients.append(conn)
-            time.sleep(1)  # avoid 2 incoming conns (weird bug)
-            self.connect(addr[0])
+                    isvaild = False
+                    break
+            if isvaild:
+                thread = threading.Thread(target=self.handle_client, args=(conn, addr))
+                thread.start()
+                self.clients.append(conn)
+                self.connect(addr[0])
     
     def createIdentity(self, name, face_encoding):
         iden, qk, pk = self.ledger.create_identity(name, face_encoding)
