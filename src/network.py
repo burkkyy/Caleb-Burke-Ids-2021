@@ -67,7 +67,6 @@ class BlockchainNetwork:
             s.connect(addr)
             self.connections.append(s)
             print(f"[NET] connected to {addr}")
-            self.send(s, SEND_CHAIN_MESSAGE)
         except socket.timeout: print(f"[NET] connection to {addr} timed out")
         except ConnectionRefusedError: print(f"[NET] connection to {addr} was refused")
 
