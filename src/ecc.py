@@ -2,6 +2,8 @@
 This file handles Eliptic Curve Cryptography
 Using ECC signatures because RSA IS SLOW AF 
 also ECC is way cooler than RSA
+btw this file looks different from the others
+because it was made in pycharm
 '''
 import random
 import hashlib
@@ -72,21 +74,21 @@ class EllipticCurve:
             k >>= 1
         return Q
 
-    def is_point_on_curve(self, x, y):
+    def is_point_on_curve(self, x, y):  # convenience / helper function
         return self.equal_modp(y * y, x * x * x + self.a * x + self.b)
 
-    def reduce_modp(self, x):
+    def reduce_modp(self, x):  # convenience / helper function
         return x % self.p
 
-    def equal_modp(self, x, y):
+    def equal_modp(self, x, y):  # convenience / helper function
         return self.reduce_modp(x - y) == 0
 
-    def inverse_modp(self, x):
+    def inverse_modp(self, x):  # convenience / helper function
         if self.reduce_modp(x) == 0:
             return None
         return pow(x, self.p - 2, self.p)
 
-    def inverse_mod(self, x, order):
+    def inverse_mod(self, x, order):  # convenience / helper function
         if self.reduce_modp(x) == 0:
             return None
         return pow(x, order - 2, order)

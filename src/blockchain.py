@@ -80,7 +80,7 @@ class Block:
 
 class Blockchain:
     def __init__(self):
-        self.path = "data/testledger.pkl"
+        self.path = "data/ledger.pkl"
         if not self.load():
             self.chain = [self.create_genesis_block()]
             self.pending_identities = []

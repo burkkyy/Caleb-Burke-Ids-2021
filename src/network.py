@@ -1,5 +1,4 @@
 import blockchain, threading, socket, pickle, time  # All part of Python standard libary (blockchain is my script)
-from tqdm import tqdm  # for cool terminal effects
 socket.setdefaulttimeout(5)  # So socket.listen and socket.recv only run for 3 seconds to prevent program hanging
 
 # These are commands we may receive from other nodes
@@ -15,33 +14,28 @@ this file
 '''
 class BlockchainNetwork:
     def __init__(self):
-        self.run = True
+        self.run = True  # so the threads will stop
         self.HEADER = 10  # our socket header, meaning we can only handle messages size 2**HEADER
         self.PORT = 5050  # the port the servers will 'live' on
         self.MY_IP = socket.gethostbyname(socket.gethostname())
-        self.MY_ADDR = (self.MY_IP, self.PORT-2)
+        self.MY_ADDR = (self.MY_IP, self.PORT)
         self.connections = []  # store all of our outgoing sockets
         self.clients = []  # store all of incoming sockets
         self.networkIps = []
         with open("data/network_Ips.txt", "r") as r: 
             for line in r.readlines(): self.networkIps.append(line.strip("\n"))
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # create a listening socket
         self.server.bind(self.MY_ADDR)
         self.ledger = blockchain.Blockchain()
-    
-    def get_ledger(self):
-        for _ in tqdm(range(50)):  # wait for a response from the server
-            time.sleep(0.1)
-        self.sendAll(SEND_CHAIN_MESSAGE)  # ask the network for a copy of the blockchain ledger
 
     def send(self, conn, obj):
         print(f"[{conn.getsockname()} sending {obj}...")
-        time.sleep(2)  # to avoid clumping (it still happens cuz of threading)
+        time.sleep(1)  # to avoid clumping (it still rarely happens cuz of threading)
         dump = pickle.dumps(obj)  # serialize the obj
         msg = bytes(f'{len(dump):<{self.HEADER}}', 'utf-8') + dump  # pad the serialized obj
         try:
             conn.send(msg)  # send it off to the socket (not using .sendall cuz im a chad)
-        except ConnectionError:
+        except ConnectionError:  # if we are not connected anymore, catch this error
             self.close_connection(conn.sockbyname())
 
     def sendTo(self, ip, obj):
@@ -50,14 +44,14 @@ class BlockchainNetwork:
                 self.send(sock, obj)
                 break
 
-    def sendAll(self, obj):
+    def sendAll(self, obj): 
         for conn in self.connections: 
             self.send(conn, obj)
     
     def connectToNetwork(self):
         for ip in self.networkIps: 
-            # if ip != self.MY_IP:  # avoid error
-            self.connect(ip)
+            if ip != self.MY_IP:  # avoid connection loop
+                self.connect(ip)
     
     def connect(self, ip):
         for conn in self.connections:
@@ -71,6 +65,7 @@ class BlockchainNetwork:
             s.connect(addr)
             self.connections.append(s)
             print(f"[NET] connected to {addr}")
+            self.send(s, SEND_CHAIN_MESSAGE)
         except socket.timeout: print(f"[NET] connection to {addr} timed out")
         except ConnectionRefusedError: print(f"[NET] connection to {addr} was refused")
 
@@ -91,15 +86,15 @@ class BlockchainNetwork:
         full_msg, new_msg = b'', True
         while self.run:
             try:
-                msg = conn.recv(self.HEADER + 4069)
+                msg = conn.recv(self.HEADER + 4069)  # receive the packet
                 full_msg += msg
-                if new_msg:
+                if new_msg:  # find the new message length 
                     msg_length = int(msg[:self.HEADER])
                     new_msg = False
                 
-                if len(full_msg) - self.HEADER == msg_length:
-                    received_msg = pickle.loads(full_msg[self.HEADER:])
-                    full_msg, new_msg = b'', True
+                if len(full_msg) - self.HEADER == msg_length:  # we know we received the full msg
+                    received_msg = pickle.loads(full_msg[self.HEADER:])  # we are now safe to deserialize the received obj
+                    full_msg, new_msg = b'', True  # any msg we receive now is a new msg
                     if received_msg == DISCONNECT_MESSAGE:
                         print(f'[{addr}] disconnected')
                         self.close_connection(conn)
@@ -107,24 +102,23 @@ class BlockchainNetwork:
                     elif received_msg == STATUS_MESSAGE: 
                         self.sendTo(addr[0], 'active')
                     elif received_msg == SEND_CHAIN_MESSAGE:
+                        # we use a thread so we can continue to listen for receives in this socket
                         thread = threading.Thread(target=self.sendTo, args=(addr[0], self.ledger))
                         thread.start()
-                        # self.sendTo(addr[0], self.ledger)
                     else: 
-                        if type(received_msg) == blockchain.Identity: self.ledger.add_identity(received_msg)
-                        elif type(received_msg) == blockchain.Block: self.ledger.add_block(received_msg)
+                        if type(received_msg) == blockchain.Identity: 
+                            self.ledger.add_identity(received_msg)
+                            if len(self.ledger.pending_identities) > 3:  # if we have more than 3 pending idens, we should mine a block
+                                self.mineBlock()
+                        elif type(received_msg) == blockchain.Block:
+                            self.ledger.add_block(received_msg)
                         elif type(received_msg) == blockchain.Blockchain:
-                            print("YES 1")
                             if received_msg.check_integrity() != True: 
-                                print("NO 1")
                                 return
                             if len(received_msg.chain) < len(self.ledger.chain): 
-                                print("NO 2")
                                 return
                             if received_msg.chain[0].cal_hash() != self.ledger.chain[0].cal_hash(): 
-                                print("NO 3")
                                 return
-                            print("YES 2")
                             self.ledger.__dict__ = received_msg.__dict__
                             self.ledger.printChainInfo()
                     print(f"[{addr}] received {received_msg}")
@@ -146,7 +140,7 @@ class BlockchainNetwork:
             thread = threading.Thread(target=self.handle_client, args=(conn, addr))
             thread.start()
             self.clients.append(conn)
-            time.sleep(1)
+            time.sleep(1)  # avoid 2 incoming conns (weird bug)
             self.connect(addr[0])
     
     def createIdentity(self, name, face_encoding):
@@ -182,7 +176,6 @@ class BlockchainNetwork:
         thread.start()
         thread = threading.Thread(target=self.connectToNetwork)
         thread.start()
-        # self.get_ledger()
 
     def close(self):
         self.sendAll(DISCONNECT_MESSAGE)

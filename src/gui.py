@@ -1,3 +1,4 @@
+from os import name
 from tkinter import simpledialog, messagebox, filedialog
 import network, threading, cv2
 from PIL import Image, ImageTk
@@ -23,7 +24,7 @@ class Base(tk.Tk):  # inherent from tk.Tk class
         container.grid_columnconfigure(0, weight=0)
 
         self.frames = {}  # to hold and manage each screen in the app
-        for f in (MainScreen, OpenLedgerScreen, CreateIdentityScreen, ScanImageScreen, WebcamScreen, ImageScreen):
+        for f in (MainScreen, OpenLedgerScreen, CreateIdentityScreen, ScanImageScreen, WebcamScanScreen, ImageScanScreen, WebcamScreen, ImageScreen):
             frame = f(container, self)  # init each screen and set parent each each screen to container
             self.frames[f] = frame  # add the screen to the frames dict 
             frame.grid(row=0, column=0, sticky="nsew")
@@ -63,6 +64,9 @@ class Base(tk.Tk):  # inherent from tk.Tk class
             )
         )
         return filepath
+    
+    def get_faces(self):
+        return self.net.get_faces()
 
     def quit(self):
         '''
@@ -87,10 +91,8 @@ class MainScreen(tk.Frame):
         the window size to look nicer
         '''
         self.controller.changeWindowSize(200, 250)
-        for slave in self.pack_slaves():
-            slave.destroy()
-        for slave in self.grid_slaves():
-            slave.destroy()
+        for slave in self.pack_slaves(): slave.destroy()
+        for slave in self.grid_slaves(): slave.destroy()
         
         # Initialize the screen buttons and labels
         titleLabel = tk.Label(self, text="Start Page", font=TITLE_FONT, padx=5, pady=5)
@@ -140,16 +142,33 @@ class OpenLedgerScreen(tk.Frame):
 
     def update(self):
         self.controller.changeWindowSize(300, 200)
-        for slave in self.pack_slaves():
-            slave.destroy()
-        for slave in self.grid_slaves():
-            slave.destroy()
+        for slave in self.pack_slaves(): slave.destroy()
+        for slave in self.grid_slaves(): slave.destroy()
         
         title = tk.Label(self, text="Ledger UI", font=TITLE_FONT)
-        title.pack(pady=10, padx=10)
-
+        chainInfoBtn = tk.Button(self, text="Show Chain Info", command=self.showChainInfo)
+        namesInfoBtn = tk.Button(self, text="Show Key Owners", command=self.showKeyOwners)
         goBackButton = tk.Button(self, text="Go Back", command=lambda: self.controller.showFrame(MainScreen))
+
+        title.pack(pady=10, padx=10)
+        chainInfoBtn.pack()
+        namesInfoBtn.pack()
         goBackButton.pack()
+
+    def showKeyOwners(self):
+        names = []
+        for i, block in enumerate(self.controller.net.ledger.chain):
+            for j, identity in enumerate(block.identities):
+                names.append(f"Block #{i}, Identity #{j}, Name: {identity.name}")
+        txt = '\n'.join(names)
+        messagebox.showinfo("Identity Owners", f"{txt}")
+
+    def showChainInfo(self):
+        totalBlocks = len(self.controller.net.ledger.chain)
+        totalIdentities = 0
+        for block in self.controller.net.ledger.chain:
+            totalIdentities += len(block.identities)
+        messagebox.showinfo("Chain Info", f"Total blocks: {totalBlocks}\nTotal identities: {totalIdentities}")
 
 class CreateIdentityScreen(tk.Frame):
     def __init__(self, parent, controller):
@@ -158,10 +177,8 @@ class CreateIdentityScreen(tk.Frame):
 
     def update(self):
         self.controller.changeWindowSize(200, 150)
-        for slave in self.pack_slaves():
-            slave.destroy()
-        for slave in self.grid_slaves():
-            slave.destroy()
+        for slave in self.pack_slaves(): slave.destroy()
+        for slave in self.grid_slaves(): slave.destroy()
 
         title = tk.Label(self, text="Create New Identity")
         CreateFromWebcam = tk.Button(self, text="Create Identity from Webcam", command=lambda: self.controller.showFrame(WebcamScreen))
@@ -180,16 +197,103 @@ class ScanImageScreen(tk.Frame):
 
     def update(self):
         self.controller.changeWindowSize(400, 300)
-        for slave in self.pack_slaves():
-            slave.destroy()
-        for slave in self.grid_slaves():
-            slave.destroy()
+        for slave in self.pack_slaves(): slave.destroy()
+        for slave in self.grid_slaves(): slave.destroy()
 
         title = tk.Label(self, text="Scan Image for Identities")
+        webcamScan = tk.Button(self, text="Scan Webcam", command=lambda: self.controller.showFrame(WebcamScanScreen))
+        imageScan = tk.Button(self, text="Scan Image", command=lambda: self.controller.showFrame(ImageScanScreen))
         goBackButton = tk.Button(self, text="Go Back", command=lambda: self.controller.showFrame(MainScreen))
         
         title.pack(pady=10, padx=10)
+        webcamScan.pack()
+        imageScan.pack()
         goBackButton.pack()
+
+class WebcamScanScreen(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+        self.current_image = None
+        self.current_frame = None
+        self.running = False
+    
+    def getCamFrame(self):
+        if cam.isOpened():  # check if cam is useable
+            ret, frame = cam.read()
+            if ret:  # if read was successful
+                return True, frame  # cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        return False, None
+    
+    def showCamFrame(self):
+        while self.running:
+            check, frame = self.getCamFrame()
+            if check:  # if cam read was successful
+                if self.canvas.winfo_exists() == 1: self.canvas.create_image(0, 0, image=self.current_frame, anchor='nw')
+                self.current_image = frame
+                frame = face.draw_rect_on_people_with_names(frame, *self.idens)
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # convert image to rgb
+                frame = ImageTk.PhotoImage(image=Image.fromarray(frame))  # convert to PIL image
+                self.current_frame = frame
+                if self.canvas.winfo_exists() == 1: self.canvas.create_image(0, 0, image=self.current_frame, anchor='nw')  # display image on canvas
+            else:
+                if self.canvas.winfo_exists() == 1: self.canvas.create_text(0, 0, text="WEBCAM ERROR", anchor='center')
+    
+    def update(self):
+        self.controller.changeWindowSize(int(cam.get(cv2.CAP_PROP_FRAME_WIDTH)+300), int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT)+150))
+        self.idens = self.controller.get_faces()
+        for slave in self.pack_slaves(): slave.destroy()
+        for slave in self.grid_slaves(): slave.destroy()
+        
+        title = tk.Label(self, text="Webcam Image scan", font=TITLE_FONT, padx=0, pady=0, anchor='nw')
+        goBackButton = tk.Button(self, text="Go Back", command=self.close, padx=0, pady=0, anchor='nw')
+        self.canvas = tk.Canvas(self, width=cam.get(cv2.CAP_PROP_FRAME_WIDTH), height=cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+        title.grid(column=0, row=0, padx=5, pady=5)
+        goBackButton.grid(column=0, row=3, padx=3, pady=3)
+        self.canvas.grid(column=1, row=4, padx=5, pady=5)
+
+        self.running = True
+        thread = threading.Thread(target=self.showCamFrame)
+        thread.start()
+
+    def close(self):
+        self.running = False
+        self.canvas.destroy()
+        self.controller.showFrame(ScanImageScreen)
+
+class ImageScanScreen(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+    
+    def update(self):
+        # disgusting image converting because tkinter only works with PIL images
+        self.path = self.controller.getImageFromFile()
+        while self.path == '':
+            self.path = self.controller.getImageFromFile()
+        self.idens = self.controller.get_faces()
+        self.image = cv2.imread(self.path)
+        self.image = face.draw_rect_on_people_with_names(self.image, *self.idens)
+        self.image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
+        self.image = ImageTk.PhotoImage(image=Image.fromarray(self.image))
+        
+        self.controller.changeWindowSize(500, 500)
+        for slave in self.pack_slaves(): slave.destroy()
+        for slave in self.grid_slaves(): slave.destroy()
+
+        title = tk.Label(self, text="Create Identity From Image", font=TITLE_FONT)
+        goBackBtn = tk.Button(self, text="Go Back", command=self.close, padx=0, pady=0, anchor='nw')
+        self.canvas = tk.Canvas(self, width=self.image.width(), height=self.image.height())
+        self.canvas.create_image(0, 0, image=self.image, anchor='nw')
+
+        title.grid(column=0, row=0, padx=5, pady=5)
+        goBackBtn.grid(column=0, row=2, padx=5, pady=5)
+        self.canvas.grid(column=1, row=6, padx=5, pady=5)
+        
+    def close(self):
+        self.canvas.destroy()
+        self.controller.showFrame(ScanImageScreen)
 
 class WebcamScreen(tk.Frame):
     def __init__(self, parent, controller):
@@ -210,18 +314,15 @@ class WebcamScreen(tk.Frame):
         while self.running:
             check, frame = self.getCamFrame()
             if check:  # if cam read was successful
-                if self.canvas.winfo_exists() == 1:
-                    self.canvas.create_image(0, 0, image=self.current_frame, anchor='nw')
+                if self.canvas.winfo_exists() == 1: self.canvas.create_image(0, 0, image=self.current_frame, anchor='nw')
                 self.current_image = frame
                 frame = face.draw_rect_on_people(frame)  # face detection
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)  # convert image to rgb
                 frame = ImageTk.PhotoImage(image=Image.fromarray(frame))  # convert to PIL image
                 self.current_frame = frame
-                if self.canvas.winfo_exists() == 1:
-                    self.canvas.create_image(0, 0, image=self.current_frame, anchor='nw')  # display image on canvas
-            else:
-                if self.canvas.winfo_exists() == 1:
-                    self.canvas.create_text(0, 0, text="WEBCAM ERROR", anchor='center')
+                if self.canvas.winfo_exists() == 1: self.canvas.create_image(0, 0, image=self.current_frame, anchor='nw')  # display image on canvas
+            else: 
+                if self.canvas.winfo_exists() == 1: self.canvas.create_text(0, 0, text="WEBCAM ERROR", anchor='center')
 
     def capture(self):
         self.running = False  # stop showCamFrame and getCamFrame
@@ -238,15 +339,12 @@ class WebcamScreen(tk.Frame):
             qk, pk = self.controller.net.createIdentity(name, encoding)
             self.close()
             messagebox.showinfo("Identity Successfully Created", f"Keys:\n\nprivate key: {qk}\n\npublic key: {pk}\n\nKeys can also be viewed in src/data/keys.txt")
-        else:
-            self.create_identity()
+        else: self.create_identity()
     
     def update(self):
         self.controller.changeWindowSize(int(cam.get(cv2.CAP_PROP_FRAME_WIDTH)+300), int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT)+150))
-        for slave in self.pack_slaves():
-            slave.destroy()
-        for slave in self.grid_slaves():
-            slave.destroy()
+        for slave in self.pack_slaves(): slave.destroy()
+        for slave in self.grid_slaves(): slave.destroy()
         
         title = tk.Label(self, text="Create Identity From Webcam", font=TITLE_FONT, padx=0, pady=0, anchor='nw')
         description = tk.Label(self, text="Identity is created for the face with the red box")
@@ -287,17 +385,16 @@ class ImageScreen(tk.Frame):
     def update(self):
         # disgusting image converting because tkinter only works with PIL images
         self.image = self.controller.getImageFromFile()
-        self.imageCv = cv2.imread(self.image)
+        while self.image == '':
+            self.image = self.controller.getImageFromFile()
+        self.imageCv = cv2.imread(self.image)  # imagecv so we can use it later
         self.image = face.draw_rect_on_people(self.imageCv)
-        self.image = cv2.resize(self.image, (200, 300))
         self.image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
         self.image = ImageTk.PhotoImage(image=Image.fromarray(self.image))
-
+        
         self.controller.changeWindowSize(500, 500)
-        for slave in self.pack_slaves():
-            slave.destroy()
-        for slave in self.grid_slaves():
-            slave.destroy()
+        for slave in self.pack_slaves(): slave.destroy()
+        for slave in self.grid_slaves(): slave.destroy()
 
         title = tk.Label(self, text="Create Identity From Image", font=TITLE_FONT)
         confirmBtn = tk.Button(self, text="Create Identity From this Image", command=self.createIdentityFromImage, padx=0, pady=0, anchor='nw')
@@ -309,7 +406,7 @@ class ImageScreen(tk.Frame):
         confirmBtn.grid(column=0, row=1, padx=5, pady=5)
         goBackBtn.grid(column=0, row=2, padx=5, pady=5)
         self.canvas.grid(column=1, row=6, padx=5, pady=5)
-
+        
     def close(self):
         self.canvas.destroy()
         self.controller.showFrame(CreateIdentityScreen)
