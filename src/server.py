@@ -1,5 +1,4 @@
 from os import system, name
-# import network
 import network
 
 def clear():  # to clear the console screen
