@@ -58,6 +58,8 @@ class BlockchainNetwork:
             if ip == conn.getsockname()[0]:  # having two outgoing sockets for the same server is silly
                 print(f"[NET] already connected to {conn.getsockname()}")
                 return
+            if ip == self.MY_IP:
+                return
         try:
             addr = (ip, self.PORT)
             print(f"[NET] connecting to {addr}...")
