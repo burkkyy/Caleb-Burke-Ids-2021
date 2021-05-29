@@ -138,6 +138,10 @@ class BlockchainNetwork:
         while self.run:
             try: conn, addr = self.server.accept()
             except socket.timeout: continue
+            for sock in self.clients:
+                if sock.getsockname()[0] == addr[0]:
+                    conn.close()
+                    continue
             thread = threading.Thread(target=self.handle_client, args=(conn, addr))
             thread.start()
             self.clients.append(conn)
