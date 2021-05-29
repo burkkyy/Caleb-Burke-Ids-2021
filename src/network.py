@@ -40,7 +40,7 @@ class BlockchainNetwork:
 
     def sendTo(self, ip, obj):
         for sock in self.connections:
-            if sock[0].getsockname()[0] == ip:
+            if sock[1][0] == ip:
                 self.send(sock[0], obj)
                 break
 
