@@ -55,29 +55,31 @@ class BlockchainNetwork:
     
     def connect(self, ip):
         for conn in self.connections:
-            if ip == conn.getsockname()[0]:  # having two outgoing sockets for the same server is silly
+            if ip == conn[1][0]:  # having two outgoing sockets for the same server is silly
                 print(f"[NET] already connected to {conn.getsockname()}")
                 return
             if ip == self.MY_IP:
+                print("[NET] not connecting to myself")
                 return
         try:
             addr = (ip, self.PORT)
             print(f"[NET] connecting to {addr}...")
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect(addr)
-            self.connections.append(s)
+            self.connections.append((s, addr))
             print(f"[NET] connected to {addr}")
         except socket.timeout: print(f"[NET] connection to {addr} timed out")
         except ConnectionRefusedError: print(f"[NET] connection to {addr} was refused")
 
     def close_connection(self, conn):
+        print(f"trying to close {conn}, name: {conn.getsockname()}")
         for i, sock in enumerate(self.connections):
-            if sock.getsockname()[0] == conn.getsockname()[0]:
+            if sock[1][0] == conn.getsockname()[0]:
                 print(f"[NET] closing outgoing {self.connections[i]}")
                 sock.close()
                 self.connections.pop(i)
         for i, sock in enumerate(self.clients):
-            if sock.getsockname()[0] == conn.getsockname()[0]:
+            if sock[1][0] == conn.getsockname()[0]:
                 print(f"[NET] closing incoming {self.clients[i]}")
                 sock.close()
                 self.clients.pop(i)
@@ -142,15 +144,14 @@ class BlockchainNetwork:
             except socket.timeout: continue
             isvaild = True
             for sock in self.clients:
-                print(sock.getsockname()[0], addr[0])
-                if sock.getsockname()[0] == conn.getsockname()[0]:
+                if sock[1][0] == addr[0]:
                     conn.close()
                     isvaild = False
                     break
             if isvaild:
                 thread = threading.Thread(target=self.handle_client, args=(conn, addr))
                 thread.start()
-                self.clients.append(conn)
+                self.clients.append((conn, addr))
                 self.connect(addr[0])
     
     def createIdentity(self, name, face_encoding):
@@ -171,9 +172,9 @@ class BlockchainNetwork:
         outgoings = []
         incomings = []
         for outgoing in self.connections:
-            outgoings.append(outgoing.getsockname())
+            outgoings.append(outgoing[1])
         for incoming in self.clients:
-            incomings.append(incoming.getsockname())
+            incomings.append(incoming[1])
         return outgoings, incomings
 
     def get_chain(self): return self.ledger
