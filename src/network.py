@@ -140,6 +140,7 @@ class BlockchainNetwork:
                 conn, addr = self.server.accept()
                 print(conn.getsockname(), addr)
             except socket.timeout: continue
+            isvaild = True
             for sock in self.clients:
                 print(sock.getsockname()[0], addr[0])
                 if sock.getsockname()[0] == conn.getsockname()[0]:
