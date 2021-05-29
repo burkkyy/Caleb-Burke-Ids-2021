@@ -29,7 +29,7 @@ class BlockchainNetwork:
         self.ledger = blockchain.Blockchain()
 
     def send(self, conn, obj):
-        print(f"[{conn.getsockname()} sending {obj}...")
+        print(f"[{conn.getsockname()}] sending {obj}...")
         time.sleep(1)  # to avoid clumping (it still rarely happens cuz of threading)
         dump = pickle.dumps(obj)  # serialize the obj
         msg = bytes(f'{len(dump):<{self.HEADER}}', 'utf-8') + dump  # pad the serialized obj
