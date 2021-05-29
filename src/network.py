@@ -46,7 +46,7 @@ class BlockchainNetwork:
 
     def sendAll(self, obj): 
         for conn in self.connections: 
-            self.send(conn, obj)
+            self.send(conn[0], obj)
     
     def connectToNetwork(self):
         for ip in self.networkIps: 
