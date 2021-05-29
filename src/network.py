@@ -76,12 +76,12 @@ class BlockchainNetwork:
         for i, sock in enumerate(self.connections):
             if sock[0].getsockname()[0] == conn.getsockname()[0]:
                 print(f"[NET] closing outgoing {self.connections[i]}")
-                sock.close()
+                sock[0].close()
                 self.connections.pop(i)
         for i, sock in enumerate(self.clients):
             if sock[0].getsockname()[0] == conn.getsockname()[0]:
                 print(f"[NET] closing incoming {self.clients[i]}")
-                sock.close()
+                sock[0].close()
                 self.clients.pop(i)
 
     def handle_client(self, conn, addr):
