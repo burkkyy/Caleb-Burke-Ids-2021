@@ -1,8 +1,13 @@
 Welcome to caleb's facial recognition blockchain system.
 
-The program will automaticly handle incoming and outcoming data
-
 How to Create Identities: 
     To create an "identity", simply click "create new identity" on the main 
 menu and pick either create from webcam or load image from file. If you
-pick webcam, it will take a bit to load for the first time
+pick webcam, it may take awhile to load for the first time
+
+How to Scan an image:
+    To scan an image, simply click "Scan image for identities" and chose 
+create from webcam or load image from file. If you choose webcam, it may 
+take awhile to load for the first time
+
+Other than these two operations, the program does everything automatically
