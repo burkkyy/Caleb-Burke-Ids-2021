@@ -120,8 +120,6 @@ class BlockchainNetwork:
                                 return
                             if len(received_msg.chain) < len(self.ledger.chain): 
                                 return
-                            if received_msg.chain[0].cal_hash() != self.ledger.chain[0].cal_hash(): 
-                                return
                             self.ledger.__dict__ = received_msg.__dict__
                             self.ledger.printChainInfo()
                     print(f"[{addr}] received {received_msg}")
